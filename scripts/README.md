@@ -20,6 +20,7 @@ deno run -A scripts/generate-trophy-svg.ts \
 ```
 
 Environment variables:
+
 - `GITHUB_TOKEN1` (required)
 - `GITHUB_TOKEN2` (optional)
 - `GITHUB_API` (optional)
