@@ -4,16 +4,16 @@
 
 Generate an SVG using the local request handler.
 
-```
-deno run -A scripts/generate-trophy-svg.ts \
+```shell
+deno run --allow-net --allow-env --allow-read --allow-write scripts/generate-trophy-svg.ts \
   --username luojiyin1987 \
   --output generated/luojiyin1987.svg
 ```
 
 You can also build the URL from a username and extra query parameters:
 
-```
-deno run -A scripts/generate-trophy-svg.ts \
+```shell
+deno run --allow-net --allow-env --allow-read --allow-write scripts/generate-trophy-svg.ts \
   --username luojiyin1987 \
   --query "column=-1&theme=onedark" \
   --output generated/luojiyin1987.svg
