@@ -109,9 +109,6 @@ function parseArgs(args: string[]): Options {
 }
 
 function buildUrl(options: Options): string | null {
-  if (options.url) {
-    return options.url;
-  }
   if (!options.username) {
     return null;
   }
@@ -128,6 +125,15 @@ function buildUrl(options: Options): string | null {
     }
   }
   return url.toString();
+}
+
+function validateUrl(value: string): { url?: string; error?: string } {
+  try {
+    const url = new URL(value);
+    return { url: url.toString() };
+  } catch {
+    return { error: `Invalid --url: ${value}` };
+  }
 }
 
 function resolveOutputPath(options: Options): string {
@@ -173,7 +179,18 @@ export async function run(args: string[]): Promise<number> {
     return 1;
   }
 
-  const url = buildUrl(options);
+  let url: string | null = null;
+  if (options.url) {
+    const result = validateUrl(options.url);
+    if (result.error) {
+      console.error(result.error);
+      printHelp();
+      return 1;
+    }
+    url = result.url ?? null;
+  } else {
+    url = buildUrl(options);
+  }
   if (!url) {
     console.error("Failed to build request URL.");
     return 1;
