@@ -1,3 +1,4 @@
+import { parse } from "https://deno.land/std@0.203.0/flags/mod.ts";
 import { dirname } from "https://deno.land/std@0.203.0/path/mod.ts";
 
 type Options = {
@@ -23,42 +24,87 @@ Options:
 `);
 }
 
-function parseArgs(args: string[]): Options {
-  const options: Options = { help: false, errors: [] };
+function findMissingValues(args: string[]): string[] {
+  const errors: string[] = [];
+  const valueFlags = new Set(["--url", "--username", "--query", "--output"]);
   for (let i = 0; i < args.length; i += 1) {
     const arg = args[i];
-    if (arg === "-h" || arg === "--help") {
-      options.help = true;
-      continue;
+    if (arg === "--") {
+      break;
     }
     if (!arg.startsWith("--")) {
-      options.errors.push(`Unknown argument: ${arg}`);
       continue;
     }
-    const key = arg.slice(2);
-    const value = args[i + 1];
-    if (value === undefined) {
-      options.errors.push(`Missing value for: ${arg}`);
+    const [flag, inlineValue] = arg.split("=", 2);
+    if (!valueFlags.has(flag)) {
+      continue;
+    }
+    if (inlineValue !== undefined) {
+      if (inlineValue.length === 0) {
+        errors.push(`Missing value for: ${flag}`);
+      }
+      continue;
+    }
+    const next = args[i + 1];
+    if (!next || next.startsWith("-")) {
+      errors.push(`Missing value for: ${flag}`);
       continue;
     }
     i += 1;
-    switch (key) {
-      case "url":
-        options.url = value;
-        break;
-      case "username":
-        options.username = value;
-        break;
-      case "query":
-        options.query = value;
-        break;
-      case "output":
-        options.output = value;
-        break;
-      default:
-        options.errors.push(`Unknown option: ${arg}`);
+  }
+  return errors;
+}
+
+function readString(value: unknown): string | undefined {
+  if (typeof value === "string") {
+    return value;
+  }
+  if (Array.isArray(value) && value.length > 0) {
+    const last = value[value.length - 1];
+    if (typeof last === "string") {
+      return last;
     }
   }
+  return undefined;
+}
+
+function parseArgs(args: string[]): Options {
+  const parsed = parse(args, {
+    boolean: ["help"],
+    string: ["url", "username", "query", "output"],
+    alias: { h: "help" },
+  });
+
+  const errors: string[] = [];
+  const allowedKeys = new Set([
+    "_",
+    "help",
+    "h",
+    "url",
+    "username",
+    "query",
+    "output",
+  ]);
+  for (const key of Object.keys(parsed)) {
+    if (!allowedKeys.has(key)) {
+      errors.push(`Unknown option: --${key}`);
+    }
+  }
+  if (parsed._.length > 0) {
+    for (const arg of parsed._) {
+      errors.push(`Unknown argument: ${arg}`);
+    }
+  }
+  errors.push(...findMissingValues(args));
+
+  const options: Options = {
+    help: Boolean(parsed.help),
+    errors,
+  };
+  options.url = readString(parsed.url);
+  options.username = readString(parsed.username);
+  options.query = readString(parsed.query);
+  options.output = readString(parsed.output);
   return options;
 }
 
