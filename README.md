@@ -63,6 +63,18 @@ readme, change the `?username=` value to your GitHub's username.
 [![trophy](https://github-profile-trophy.vercel.app/?username=ryo-ma)](https://github.com/ryo-ma/github-profile-trophy)
 ```
 
+## Self-hosted SVG (GitHub Actions)
+
+If you use the scheduled GitHub Actions workflow in this repo, the SVG is
+published to the `trophy-svg` branch. You can embed it directly in your profile
+README like this:
+
+```
+![trophy](https://raw.githubusercontent.com/<owner>/<repo>/trophy-svg/generated/<owner>.svg)
+```
+
+Replace `<owner>` and `<repo>` with your GitHub username and repository name.
+
 <p align="center">
   <img src="https://github-profile-trophy.vercel.app/?username=ryo-ma&column=8&rank=SSS,SS,S,AAA,AA,A,B,C" />
 </p>
