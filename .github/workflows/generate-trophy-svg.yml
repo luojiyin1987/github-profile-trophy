@@ -1,0 +1,56 @@
+name: Generate Trophy SVG
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: generate-trophy-svg
+  cancel-in-progress: true
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: "v2.0.1"
+
+      - name: Cache Deno dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/deno
+          key: deno-${{ runner.os }}-${{ hashFiles('deps.ts', 'deno.json', 'api/**/*.ts', 'src/**/*.ts', 'scripts/**/*.ts') }}
+          restore-keys: |
+            deno-${{ runner.os }}-
+
+      - name: Generate SVG
+        env:
+          GITHUB_TOKEN1: ${{ secrets.GITHUB_TOKEN1 || github.token }}
+          GITHUB_TOKEN2: ${{ secrets.GITHUB_TOKEN2 }}
+        run: >
+          deno run -A scripts/generate-trophy-svg.ts
+          --username "${{ github.repository_owner }}"
+          --output "generated/${{ github.repository_owner }}.svg"
+
+      - name: Commit and force push to trophy-svg branch
+        run: |
+          OUTPUT_FILE="generated/${{ github.repository_owner }}.svg"
+          if [ ! -f "${OUTPUT_FILE}" ]; then
+            echo "Missing output file: ${OUTPUT_FILE}"
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan trophy-svg-tmp
+          git add -f "${OUTPUT_FILE}"
+          git commit -m "chore: update trophy svg"
+          git push --force origin HEAD:trophy-svg
