@@ -81,7 +81,7 @@ export class GithubApiService extends GithubRepository {
         Logger.error(
           `Failed to fetch ${name} for username: '${username}' - ${result.message}`,
         );
-        return new ServiceError("Not found", EServiceKindError.NOT_FOUND);
+        return result;
       }
 
       results[name] = result;

@@ -20,55 +20,38 @@ import { ServiceError } from "../../Types/index.ts";
 
 // Unfortunatelly, The spy is a global instance
 // We can't reset mock as Jest does.
+// Stubs are consumed sequentially: each test retries up to TOKENS.length times.
+// requestUserInfo now runs 4 queries sequentially, stopping on first error.
 stub(
   soxa,
   "post",
   returnsNext([
-    // Should get data in first try
+    // Test 1: Should get data in first try (1 attempt, success)
     new Promise((resolve) => {
       resolve(successGithubResponseMock.default);
     }),
-    // Should throw NOT FOUND (requestUserInfo makes 4 API calls: repository, activity, issue, pullRequest)
-    // Each call makes 2 attempts (one per token), so 8 promises total
+    // Test 2: Should throw NOT FOUND (requestUserInfo: repo query, 2 attempts)
     new Promise((resolve) => {
       resolve(notFoundGithubResponseMock.default);
     }),
     new Promise((resolve) => {
       resolve(notFoundGithubResponseMock.default);
     }),
+    // Test 3: Should throw NOT FOUND even if request the user only (2 attempts)
     new Promise((resolve) => {
       resolve(notFoundGithubResponseMock.default);
     }),
     new Promise((resolve) => {
       resolve(notFoundGithubResponseMock.default);
     }),
-    new Promise((resolve) => {
-      resolve(notFoundGithubResponseMock.default);
-    }),
-    new Promise((resolve) => {
-      resolve(notFoundGithubResponseMock.default);
-    }),
-    new Promise((resolve) => {
-      resolve(notFoundGithubResponseMock.default);
-    }),
-    new Promise((resolve) => {
-      resolve(notFoundGithubResponseMock.default);
-    }),
-    // Should throw NOT FOUND even if request the user only
-    new Promise((resolve) => {
-      resolve(notFoundGithubResponseMock.default);
-    }),
-    new Promise((resolve) => {
-      resolve(notFoundGithubResponseMock.default);
-    }),
-    // Should throw RATE LIMIT
+    // Test 4: Should throw RATE LIMIT (2 attempts)
     new Promise((resolve) => {
       resolve(rateLimitMock.default.rate_limit);
     }),
     new Promise((resolve) => {
       resolve(rateLimitMock.default.rate_limit);
     }),
-    // Should throw RATE LIMIT Exceed
+    // Test 5: Should throw RATE LIMIT Exceed (2 attempts: rate_limit + exceeded)
     new Promise((resolve) => {
       resolve(rateLimitMock.default.rate_limit);
     }),
