@@ -66,15 +66,15 @@ export class UserInfo {
       userActivity.contributionsCollection.restrictedContributionsCount +
       userActivity.contributionsCollection.totalCommitContributions;
     const totalStargazers = userRepository.repositories.nodes.reduce(
-      (prev: number, node: Repository) => {
-        return prev + (node.stargazers?.totalCount ?? 0);
+      (prev: number, node: Repository | null) => {
+        return prev + (node?.stargazers?.totalCount ?? 0);
       },
       0,
     );
 
     const languages = new Set<string>();
-    userRepository.repositories.nodes.forEach((node: Repository) => {
-      if (node.languages.nodes != undefined) {
+    userRepository.repositories.nodes.forEach((node: Repository | null) => {
+      if (node?.languages.nodes != undefined) {
         node.languages.nodes.forEach((node: Language) => {
           if (node != undefined) {
             languages.add(node.name);
@@ -88,6 +88,7 @@ export class UserInfo {
 
     earliestRepoDate = userRepository.repositories.nodes.reduce(
       (earliest, node) => {
+        if (!node) return earliest;
         return new Date(node.createdAt).getTime() < new Date(earliest).getTime()
           ? node.createdAt
           : earliest;
