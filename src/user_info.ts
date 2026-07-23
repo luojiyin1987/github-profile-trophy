@@ -67,7 +67,7 @@ export class UserInfo {
       userActivity.contributionsCollection.totalCommitContributions;
     const totalStargazers = userRepository.repositories.nodes.reduce(
       (prev: number, node: Repository) => {
-        return prev + node.stargazers.totalCount;
+        return prev + (node.stargazers?.totalCount ?? 0);
       },
       0,
     );
