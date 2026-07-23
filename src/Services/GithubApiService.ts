@@ -55,38 +55,44 @@ export class GithubApiService extends GithubRepository {
     );
   }
   async requestUserInfo(username: string): Promise<UserInfo | ServiceError> {
-    // Avoid to call others if one of them is null
+    const QUERY_DELAY_MS = 200;
 
-    const promises = Promise.allSettled([
-      this.requestUserRepository(username),
-      this.requestUserActivity(username),
-      this.requestUserIssue(username),
-      this.requestUserPullRequest(username),
-    ]);
-    try {
-      const [repository, activity, issue, pullRequest] = await promises;
-      const status = [
-        repository.status,
-        activity.status,
-        issue.status,
-        pullRequest.status,
-      ];
+    const delay = (ms: number) =>
+      new Promise((resolve) => setTimeout(resolve, ms));
 
-      if (status.includes("rejected")) {
-        Logger.error(`Can not find a user with username:' ${username}'`);
+    const queries = [
+      { name: "repository", fn: () => this.requestUserRepository(username) },
+      { name: "activity", fn: () => this.requestUserActivity(username) },
+      { name: "issue", fn: () => this.requestUserIssue(username) },
+      { name: "pullRequest", fn: () => this.requestUserPullRequest(username) },
+    ];
+
+    const results: Record<string, unknown> = {};
+
+    for (let i = 0; i < queries.length; i++) {
+      if (i > 0) {
+        await delay(QUERY_DELAY_MS);
+      }
+
+      const { name, fn } = queries[i];
+      const result = await fn();
+
+      if (result instanceof ServiceError) {
+        Logger.error(
+          `Failed to fetch ${name} for username: '${username}' - ${result.message}`,
+        );
         return new ServiceError("Not found", EServiceKindError.NOT_FOUND);
       }
 
-      return new UserInfo(
-        (activity as PromiseFulfilledResult<GitHubUserActivity>).value,
-        (issue as PromiseFulfilledResult<GitHubUserIssue>).value,
-        (pullRequest as PromiseFulfilledResult<GitHubUserPullRequest>).value,
-        (repository as PromiseFulfilledResult<GitHubUserRepository>).value,
-      );
-    } catch {
-      Logger.error(`Error fetching user info for username: ${username}`);
-      return new ServiceError("Not found", EServiceKindError.NOT_FOUND);
+      results[name] = result;
     }
+
+    return new UserInfo(
+      results.activity as GitHubUserActivity,
+      results.issue as GitHubUserIssue,
+      results.pullRequest as GitHubUserPullRequest,
+      results.repository as GitHubUserRepository,
+    );
   }
 
   async executeQuery<T = unknown>(
