@@ -32,9 +32,49 @@ jobs:
           restore-keys: |
             deno-${{ runner.os }}-
 
+      - name: Diagnose GitHub GraphQL
+        env:
+          PAT: ${{ secrets.PAT_1 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ -z "${PAT:-}" ]; then
+            echo "::error::PAT_1 is empty or unavailable"
+            exit 1
+          fi
+
+          jq -n \
+            --arg login "${{ github.repository_owner }}" \
+            '{
+              query: "query($login: String!) { viewer { login } user(login: $login) { repositories(first: 10, ownerAffiliations: OWNER, orderBy: { field: STARGAZERS, direction: DESC }) { totalCount nodes { name stargazerCount } } } }",
+              variables: {
+                login: $login
+              }
+            }' > /tmp/query.json
+
+          curl -fsS \
+            -H "Authorization: bearer ${PAT}" \
+            -H "Content-Type: application/json" \
+            --data @/tmp/query.json \
+            https://api.github.com/graphql \
+            > /tmp/result.json
+
+          jq '{
+            errors,
+            viewer: .data.viewer.login,
+            repositoryCount: .data.user.repositories.totalCount,
+            repositories: .data.user.repositories.nodes
+          }' /tmp/result.json
+
+          if jq -e '.errors != null' /tmp/result.json >/dev/null; then
+            echo "::error::GitHub GraphQL returned errors"
+            exit 1
+          fi
+
       - name: Generate SVG
         env:
-          GITHUB_TOKEN1: ${{ secrets.PAT_1 || github.token }}
+          GITHUB_TOKEN1: ${{ secrets.PAT_1 }}
           GITHUB_TOKEN2: ${{ secrets.PAT_2 }}
         run: >
           deno run -A scripts/generate-trophy-svg.ts
