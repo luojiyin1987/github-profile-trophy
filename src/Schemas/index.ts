@@ -41,10 +41,14 @@ export const queryUserPullRequest = `
 `;
 
 export const queryUserRepository = `
-  query userInfo($username: String!) {
+  query userInfo($username: String!, $after: String) {
     user(login: $username) {
-      repositories(first: 50, ownerAffiliations: OWNER, orderBy: {direction: DESC, field: STARGAZERS}) {
+      repositories(first: 100, after: $after, ownerAffiliations: OWNER, orderBy: {direction: DESC, field: STARGAZERS}) {
         totalCount
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
         nodes {
           languages(first: 3, orderBy: {direction:DESC, field: SIZE}) {
             nodes {

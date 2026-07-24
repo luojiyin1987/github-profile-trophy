@@ -28,9 +28,42 @@ export class GithubApiService extends GithubRepository {
   async requestUserRepository(
     username: string,
   ): Promise<GitHubUserRepository | ServiceError> {
-    return await this.executeQuery<GitHubUserRepository>(queryUserRepository, {
-      username,
-    });
+    let allNodes: GitHubUserRepository["repositories"]["nodes"] = [];
+    let totalCount = 0;
+    let after: string | null = null;
+
+    do {
+      const variables: Record<string, string> = { username };
+      if (after) {
+        variables.after = after;
+      }
+
+      const result = await this.executeQuery<{
+        repositories: GitHubUserRepository["repositories"] & {
+          pageInfo: { hasNextPage: boolean; endCursor: string };
+        };
+      }>(queryUserRepository, variables);
+
+      if (result instanceof ServiceError) {
+        return result;
+      }
+
+      if (allNodes.length === 0) {
+        totalCount = result.repositories.totalCount;
+      }
+
+      allNodes = allNodes.concat(result.repositories.nodes);
+      after = result.repositories.pageInfo.hasNextPage
+        ? result.repositories.pageInfo.endCursor
+        : null;
+    } while (after);
+
+    return {
+      repositories: {
+        totalCount,
+        nodes: allNodes,
+      },
+    };
   }
   async requestUserActivity(
     username: string,

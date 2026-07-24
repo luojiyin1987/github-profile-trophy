@@ -4,6 +4,10 @@
       "user": {
         "repositories": {
           "totalCount": 128,
+          "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": "Y3Vyc29yOnYyOpHO"
+          },
           "nodes": [
             {
               "languages": {
