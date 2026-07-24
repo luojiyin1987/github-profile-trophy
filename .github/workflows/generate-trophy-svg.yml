@@ -34,8 +34,8 @@ jobs:
 
       - name: Generate SVG
         env:
-          GITHUB_TOKEN1: ${{ secrets.GITHUB_TOKEN1 || github.token }}
-          GITHUB_TOKEN2: ${{ secrets.GITHUB_TOKEN2 }}
+          GITHUB_TOKEN1: ${{ secrets.PAT_1 || github.token }}
+          GITHUB_TOKEN2: ${{ secrets.PAT_2 }}
         run: >
           deno run -A scripts/generate-trophy-svg.ts
           --username "${{ github.repository_owner }}"
