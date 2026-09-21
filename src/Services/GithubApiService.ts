@@ -18,11 +18,13 @@ import { EServiceKindError, ServiceError } from "../Types/index.ts";
 import { Logger } from "../Helpers/Logger.ts";
 import { requestGithubData } from "./request.ts";
 
+const DEFAULT_GITHUB_RETRY_ATTEMPTS = 3;
+
 // Need to be here - Exporting from another file makes array of null
 export const TOKENS = [
   Deno.env.get("GITHUB_TOKEN1"),
   Deno.env.get("GITHUB_TOKEN2"),
-];
+].filter((token): token is string => Boolean(token));
 
 export class GithubApiService extends GithubRepository {
   async requestUserRepository(
@@ -134,14 +136,18 @@ export class GithubApiService extends GithubRepository {
   ) {
     try {
       const retry = new Retry(
-        TOKENS.length,
+        Math.max(DEFAULT_GITHUB_RETRY_ATTEMPTS, TOKENS.length),
         CONSTANTS.DEFAULT_GITHUB_RETRY_DELAY,
       );
       return await retry.fetch<Promise<T>>(async ({ attempt }) => {
+        const token = TOKENS.length > 0
+          ? TOKENS[attempt % TOKENS.length]
+          : undefined;
+
         return await requestGithubData(
           query,
           variables,
-          TOKENS[attempt],
+          token,
         );
       });
     } catch (error) {
