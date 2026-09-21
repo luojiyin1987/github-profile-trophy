@@ -31,7 +31,7 @@ Deno.test("Should retry", async () => {
   const retries = 3;
   const retryInstance = new Retry(retries);
 
-  await assertRejects(
+  const error = await assertRejects(
     () => {
       return retryInstance.fetch<MockResponse>(callbackError);
     },
@@ -40,6 +40,8 @@ Deno.test("Should retry", async () => {
   );
 
   assertEquals(countErrors, 3);
+  assertEquals(error.cause instanceof Error, true);
+  assertEquals((error.cause as Error).message, "Panic! Threw Error");
 });
 
 Deno.test("Should retry the asyncronous callback", async () => {

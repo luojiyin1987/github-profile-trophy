@@ -19,13 +19,15 @@ async function* createAsyncIterable<T>(
       yield data;
       return;
     } catch (e) {
-      if (e instanceof ServiceError && isLastAttempt) {
-        yield e;
+      const error = e instanceof Error ? e : new Error(String(e));
+
+      if (isLastAttempt) {
+        yield error;
         return;
       }
 
       yield null;
-      Logger.error(e);
+      Logger.error(error);
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }

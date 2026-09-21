@@ -156,11 +156,14 @@ export class GithubApiService extends GithubRepository {
         return error.cause;
       }
       if (error instanceof Error && error.cause) {
-        Logger.error(JSON.stringify(error.cause, null, 2));
+        Logger.error(error.cause);
       } else {
         Logger.error(error);
       }
-      return new ServiceError("not found", EServiceKindError.NOT_FOUND);
+      return new ServiceError(
+        "GitHub API request failed",
+        EServiceKindError.UPSTREAM,
+      );
     }
   }
 }
