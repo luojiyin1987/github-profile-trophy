@@ -1,9 +1,11 @@
 import { Retry } from "../Retry.ts";
+import { Logger } from "../Logger.ts";
 import {
   assertEquals,
   assertRejects,
   assertSpyCalls,
   spy,
+  stub,
 } from "../../../deps.ts";
 
 type MockResponse = {
@@ -64,4 +66,28 @@ Deno.test("Should retry the asyncronous callback", async () => {
   );
 
   assertEquals(countErrors, 3);
+});
+
+Deno.test("Retry logs only the message of an HTTP error", async () => {
+  const token = "fake-token-retry-log";
+  const error = Object.assign(new Error("Request failed"), {
+    config: { headers: { Authorization: `bearer ${token}` } },
+    cause: { token },
+  });
+  const messages: unknown[] = [];
+  const logStub = stub(Logger, "error", (message: unknown) => {
+    messages.push(message);
+  });
+
+  try {
+    await assertRejects(() =>
+      new Retry(2, 0).fetch(() => {
+        throw error;
+      })
+    );
+    assertEquals(messages, ["Request failed"]);
+    assertEquals(JSON.stringify(messages).includes(token), false);
+  } finally {
+    logStub.restore();
+  }
 });
