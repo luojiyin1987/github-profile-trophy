@@ -12,3 +12,10 @@ Deno.test("safeErrorMessage returns only the error message", () => {
   assertEquals(safeErrorMessage({ message: token }), "Unknown error");
   assertEquals(safeErrorMessage(token), "Unknown error");
 });
+
+Deno.test("safeErrorMessage leaves tokens in Error.message unchanged", () => {
+  const token = "fake-token-in-error-message";
+  const message = `Request failed for bearer ${token}`;
+
+  assertEquals(safeErrorMessage(new Error(message)), message);
+});
