@@ -16,6 +16,7 @@ import { Retry } from "../Helpers/Retry.ts";
 import { CONSTANTS } from "../utils.ts";
 import { EServiceKindError, ServiceError } from "../Types/index.ts";
 import { Logger } from "../Helpers/Logger.ts";
+import { safeErrorMessage } from "../Helpers/safeErrorMessage.ts";
 import { requestGithubData } from "./request.ts";
 
 const DEFAULT_GITHUB_RETRY_ATTEMPTS = 3;
@@ -114,7 +115,9 @@ export class GithubApiService extends GithubRepository {
 
       if (result instanceof ServiceError) {
         Logger.error(
-          `Failed to fetch ${name} for username: '${username}' - ${result.message}`,
+          `Failed to fetch ${name} for username: '${username}' - ${
+            safeErrorMessage(result)
+          }`,
         );
         return result;
       }
@@ -151,14 +154,14 @@ export class GithubApiService extends GithubRepository {
         );
       });
     } catch (error) {
-      if (error.cause instanceof ServiceError) {
-        Logger.error(error.cause.message);
+      if (error instanceof Error && error.cause instanceof ServiceError) {
+        Logger.error(safeErrorMessage(error.cause));
         return error.cause;
       }
       if (error instanceof Error && error.cause) {
-        Logger.error(error.cause);
+        Logger.error(safeErrorMessage(error.cause));
       } else {
-        Logger.error(error);
+        Logger.error(safeErrorMessage(error));
       }
       return new ServiceError(
         "GitHub API request failed",
